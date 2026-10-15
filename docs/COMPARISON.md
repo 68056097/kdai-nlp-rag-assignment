@@ -76,7 +76,10 @@ context = self.generate_context(full_doc_content, doc.page_content)
 
 prompt ของ Anthropic คือ `<document>{เอกสารเต็ม}</document> ... <chunk>{chunk}</chunk>` แต่ baseline ส่ง **chunk เดียวกันเข้าไปทั้งสองช่อง**
 LLM จึงไม่มีข้อมูลว่า chunk นี้อยู่ส่วนไหนของเอกสาร — context ที่ได้เป็นแค่ "สรุปซ้ำ" ของ chunk ไม่ใช่การ *situate* chunk ในเอกสาร ซึ่งเป็นแก่นของเทคนิค
-นอกจากนี้ prompt เป็นภาษาอังกฤษล้วนและไม่ระบุภาษาของคำตอบ → Qwen มีโอกาสตอบ context เป็นภาษาอังกฤษ ซึ่ง BM25 จับคู่กับคำถามภาษาไทยไม่ได้
+นอกจากนี้ prompt เป็นภาษาอังกฤษล้วนและไม่ระบุภาษาของคำตอบ → **ผลจริงตอนรัน baseline: ภาษาของ context ปนกัน**
+chunk 1–3 ได้ context ภาษาอังกฤษ (เช่น *"The chunk is the title and author information of a..."*, *"The chunk provides a comprehensive overview of Ger..."*)
+ส่วน chunk 4 เป็นต้นไปเป็นภาษาไทยที่ **ทวนเนื้อหาของ chunk เอง** (เช่น *"อาการของโรคหัดเยอรมัน แบ่งออกเป็นการติดเชื้อในเด็ก..."*)
+ไม่ได้บอกว่า chunk อยู่ส่วนไหนของเอกสาร ซึ่งตรงกับที่คาดจาก bug ข้างบน และ context ภาษาอังกฤษ BM25 จับคู่กับคำถามภาษาไทยไม่ได้
 และ (ดู §0) context ที่สร้างไว้ไม่ถูกส่งให้ LLM ตอนตอบ เพราะ vector index ไม่ได้เก็บไว้
 
 **Improved** (`improved/contextualizer.py`)

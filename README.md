@@ -87,17 +87,38 @@ field `context` ว่าง **25/25** ผลลัพธ์ และคำต�
 - **Recall@k หลอกได้เมื่อ chunk ใหญ่**: B ได้ Recall@5 = 100% แต่ top-5 ยาว 11,155 ตัวอักษร (~1/5 ของทั้ง corpus) เมื่อจำกัดงบ context ให้เท่ากัน (คอลัมน์ "@3,000 ตัวอักษร") chunk เล็กชนะชัด 87.5% vs 62.5% เพราะส่วนที่ตอบคำถามไม่ถูกกลบด้วยเนื้อหาเรื่องอื่น
 - ผลรายคำถามดูได้ที่ [`results/offline_bm25_study.md`](results/offline_bm25_study.md)
 
-### 3.2 ระบบจริงครบทุกขั้น (dense + context + rerank) — รันบนเครื่องที่มี OpenSearch
+### 3.2 ระบบจริงบน OpenSearch — ผลจริงจาก `python eval/evaluate_retrieval.py`
 
-```bash
-python eval/evaluate_retrieval.py    # → results/retrieval_eval.md
-python eval/compare_answers.py       # → results/answers_side_by_side.md
-```
+รันบน MacBook Air (OpenSearch 2.19.1, bge-m3, bge-reranker-v2-m3) คำถาม 24 ข้อใน `eval/eval_set.json`
+**รอบนี้ระบบ improved ปิดการสร้าง context (`USE_CONTEXT=0`)** — เป็น ablation ที่วัดผลของ chunking + BM25 ไทย + fusion + rerank ล้วน ๆ
+(ไฟล์ผลเต็ม: [`results/retrieval_eval_noctx.md`](results/retrieval_eval_noctx.md))
 
-> ผลส่วนนี้ต้องรันบนเครื่องที่มี OpenSearch + โมเดล bge-m3/bge-reranker + OpenRouter key
-> เมื่อรันแล้วให้คัดลอกตารางจาก `results/retrieval_eval.md` มาวางตรงนี้
+| ระบบ | Recall@1 | Recall@5 | Recall@20 | MRR@10 | Recall@1,500 ตัวอักษร | Recall@3,000 ตัวอักษร | ตัวอักษรใน top-5 |
+|---|---|---|---|---|---|---|---|
+| Baseline · BM25 (standard analyzer) | 4.2% | 4.2% | 4.2% | 0.042 | 4.2% | 4.2% | 95 |
+| Baseline · Dense | 91.7% | 91.7% | 100.0% | 0.924 | 75.0% | 83.3% | 11,093 |
+| **Baseline · Hybrid RRF (สไลด์หน้า 25)** | 91.7% | 91.7% | 100.0% | 0.924 | 75.0% | 83.3% | 11,093 |
+| Improved · BM25 ไทย (PyThaiNLP) | 50.0% | 83.3% | 95.8% | 0.640 | 70.8% | 83.3% | 2,621 |
+| Improved · Dense | 87.5% | **100.0%** | 100.0% | 0.931 | **100.0%** | **100.0%** | 2,663 |
+| Improved · Hybrid Weighted-RRF | 66.7% | 91.7% | 100.0% | 0.796 | 91.7% | 95.8% | 2,711 |
+| **Improved · Hybrid + Rerank (ระบบเต็ม)** | **95.8%** | 95.8% | 100.0% | **0.965** | 95.8% | **100.0%** | 2,759 |
 
-<!-- วางตารางผลจริงตรงนี้ -->
+อ่านผล
+1. **Baseline Hybrid = Baseline Dense ทุกตัวเลข** → BM25 ของ baseline (4.2%) ไม่ได้ช่วยอะไรใน fusion เลย ยืนยันหลักฐาน §3.0
+2. **BM25 ไทยใช้งานได้จริง**: Recall@5 4.2% → 83.3%
+3. **ส่ง context ให้ LLM น้อยลง ~4 เท่า (11,093 → 2,759 ตัวอักษร) แต่หาคำตอบเจอมากขึ้น** เมื่อคุมงบเท่ากัน 1,500 ตัวอักษร: 75.0% → 95.8%
+4. **Hybrid แบบ RRF น้ำหนักเท่ากัน ทำให้แย่ลงได้** (Recall@1 87.5% → 66.7%) เพราะ BM25 ยังอ่อนกว่า dense chunk ที่ BM25 จัดผิดจึงถูกดันขึ้นมา — **reranker แก้ได้** (→ 95.8%, MRR สูงสุด 0.965) เช่น q22 อันดับ 9 → 1
+5. ตัวอย่างรายคำถามที่ดีขึ้นชัด: q05 "จะแยกโรคหัดออกจากหัดเยอรมันได้อย่างไร" baseline อันดับ 11 → improved อันดับ 1, q16 อันดับ 6 → 1
+6. **ข้อที่ยังพลาด: q01** "ติดหัดเยอรมันช่วง*ตั้งท้องสามเดือนแรก*" ระบบเต็มได้อันดับ 6 (หลุด top-5) ขณะที่ baseline ได้อันดับ 1 เพราะ chunk ของ baseline ทั้งหัวข้อหญิงตั้งครรภ์อยู่ก้อนเดียว ส่วนเอกสารใช้คำว่า "*ไตรมาสแรกของการตั้งครรภ์*" ซึ่งต่างจากคำถามทั้งคำ ("ตั้งท้อง" vs "ตั้งครรภ์", "สามเดือนแรก" vs "ไตรมาสแรก") — เป็นกรณีที่ contextual chunk (คำพ้องใน context) ออกแบบมาแก้
+
+> ข้อจำกัด: คำถาม 24 ข้อ ต่างกัน 1 ข้อ = 4.2% ตัวเลขควรอ่านเป็นแนวโน้ม
+
+### 3.3 Contextual Retrieval เต็มรูปแบบ (`USE_CONTEXT=1`)
+
+โค้ดพร้อมแล้ว (`improved/contextualizer.py`) ทดสอบสร้าง context ไปได้ 11/154 chunks ก่อนเครดิต OpenRouter หมด
+รันต่อได้ด้วย `python -m improved.ingest` (ทำต่อจาก cache) แล้ว `python eval/evaluate_retrieval.py` เพื่อเทียบกับตาราง 3.2
+
+<!-- เมื่อรันแบบมี context แล้ว วางตารางผลตรงนี้ -->
 
 ## 4. วิธีรัน
 

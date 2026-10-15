@@ -26,5 +26,16 @@ class QwenClient:
                 return (resp.choices[0].message.content or "").strip()
             except Exception as e:          # rate limit / network → retry แบบ backoff
                 last_err = e
-                time.sleep(2 ** attempt)
+                status = getattr(e, "status_code", None)
+                if status in (402, 429) and attempt < retries - 1:
+                    # OpenRouter บอกเวลาที่ควรรอใน Retry-After (เช่น in-flight budget เต็ม)
+                    wait = 30
+                    try:
+                        wait = int(e.response.headers.get("Retry-After", wait))
+                    except Exception:
+                        pass
+                    print(f"[llm] HTTP {status}: รอ {min(wait, 130)} วินาทีแล้วลองใหม่...")
+                    time.sleep(min(wait, 130))
+                else:
+                    time.sleep(2 ** attempt)
         raise RuntimeError(f"LLM call failed after {retries} retries: {last_err}")

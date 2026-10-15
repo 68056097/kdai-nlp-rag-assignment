@@ -125,7 +125,7 @@ field `context` ว่าง **25/25** ผลลัพธ์ และคำต�
 ### 4.1 เตรียมระบบ (ครั้งเดียว)
 
 ```bash
-git clone https://github.com/<your-username>/kdai-nlp-rag-assignment.git
+git clone https://github.com/68056097/kdai-nlp-rag-assignment.git
 cd kdai-nlp-rag-assignment
 
 conda create -n advrag python=3.10 -y && conda activate advrag

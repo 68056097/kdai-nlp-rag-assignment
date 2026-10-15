@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+.DS_Store
+# cache/contexts.json เก็บ context ที่ LLM สร้าง — commit ได้ (ช่วยให้คนอื่นรันซ้ำโดยไม่เสียค่า API)
+# ถ้าไม่ต้องการ ให้เอา comment บรรทัดล่างออก
+# cache/

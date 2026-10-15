@@ -1,0 +1,17 @@
+# ---- ใช้ร่วมกันทั้ง baseline และ improved ----
+opensearch-py>=2.4
+sentence-transformers>=3.0
+openai>=1.30
+tqdm
+numpy
+
+# ---- baseline (โค้ดตามสไลด์หน้า 22/25) ----
+llama-index-core>=0.10
+langchain-community>=0.0.20
+langchain-core>=0.1
+
+# ---- improved ----
+pythainlp>=5.0
+
+# ---- tests ----
+pytest

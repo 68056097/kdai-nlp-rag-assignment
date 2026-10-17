@@ -148,6 +148,16 @@ python baseline/onlysearchAuthenticRAG.py   # Hands-on 2: ถาม 5 ข้อ 
 
 แก้จากต้นฉบับของครูเพียง 2 จุด (ไม่กระทบ logic): import `Document` ให้รองรับ langchain รุ่นใหม่ (แทนการ `pip install "langchain<0.1"` ตามหมายเหตุหน้า 22) และเปิดไฟล์ด้วย UTF-8
 
+**ข้อแตกต่างจาก [readme.md ของอาจารย์](https://github.com/aekanun2020/2025-authenticRAG/blob/main/readme.md)** (ลิงก์ในสไลด์หน้า 22, 25) — ไม่มีจุดใดกระทบผล
+ยืนยันได้จากคะแนน RRF ที่รันได้ (0.0167, 0.0164, 0.0161, 0.0159, 0.0156) ตรงกับไฟล์ผลตัวอย่างใน repo ของอาจารย์ทุกตัว
+
+| readme.md ของอาจารย์ | repo นี้ | เหตุผล |
+|---|---|---|
+| `pip install` ทีละแพ็กเกจ | `pip install -r requirements.txt` | แพ็กเกจหลักชุดเดียวกัน รวมไว้ในไฟล์เดียว |
+| `docker run ... opensearch:2.19.1` | `docker compose up -d` | image และค่าตั้งเดียวกัน (2.19.1, ปิด security, พอร์ต 9200) |
+| ติดตั้ง Ollama + `ollama pull bge-m3` | ไม่ได้ติดตั้ง | โค้ดของอาจารย์โหลด `BAAI/bge-m3` จาก HuggingFace ผ่าน `SentenceTransformer` ไม่ได้เรียก Ollama |
+| ถ้าเจอ `No module named 'langchain.schema'` ให้ลง `langchain<0.1` (สไลด์หน้า 22) | แก้บรรทัด import ใน `authenticRAG.py` แทน (ป้าย `[แก้เพิ่ม]`) | แก้ปัญหาเดียวกัน ใช้ langchain รุ่นปัจจุบันได้ |
+
 ### 4.3 (2) Improved
 
 ```bash
